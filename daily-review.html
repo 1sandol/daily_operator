@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0d">
+<title>Daily OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --border: #222;
+    --accent: #c9a96e;
+    --accent2: #7eb8c9;
+    --accent3: #9ec97e;
+    --muted: #555;
+    --text: #e8e0d4;
+    --text-dim: #888;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  .header {
+    padding: 48px 24px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .date-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .title {
+    font-size: 36px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .identity-bar {
+    margin-top: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* Tab nav */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex: 1;
+    min-width: 80px;
+    padding: 14px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Panels */
+  .panel { display: none; padding: 24px; animation: fadeIn 0.3s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Section heading */
+  .section-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    margin-top: 28px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-heading:first-child { margin-top: 0; }
+
+  /* Routine blocks */
+  .routine-grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .routine-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .routine-item:active { background: #1a1a1a; }
+
+  .routine-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 42px;
+  }
+
+  .routine-label {
+    font-size: 16px;
+    font-weight: 400;
+    flex: 1;
+  }
+
+  .routine-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .routine-item.done .routine-dot {
+    background: var(--accent3);
+    border-color: var(--accent3);
+    position: relative;
+  }
+  .routine-item.done .routine-dot::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #0d0d0d;
+  }
+  .routine-item.done .routine-label {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--muted);
+  }
+
+  .color-stripe {
+    width: 3px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Growth pillars */
+  .pillars {
+    display: grid;
+    gap: 12px;
+  }
+
+  .pillar {
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+  }
+  .pillar.cloud { border-left-color: var(--accent2); }
+  .pillar.strategy { border-left-color: var(--accent); }
+  .pillar.leadership { border-left-color: var(--accent3); }
+
+  .pillar-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    color: var(--text-dim);
+  }
+  .pillar.cloud .pillar-name { color: var(--accent2); }
+  .pillar.strategy .pillar-name { color: var(--accent); }
+  .pillar.leadership .pillar-name { color: var(--accent3); }
+
+  .pillar-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pillar-items li {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text);
+    padding-left: 12px;
+    position: relative;
+  }
+  .pillar-items li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* Scripture / Spirit section */
+  .scripture-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .scripture-ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .fruits-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .fruit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 12px;
+  }
+
+  .fruit-category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .fruit-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .fruit-list li {
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text);
+  }
+
+  .spirit-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 12px;
+  }
+
+  .spirit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .spirit-row:last-child { border-bottom: none; }
+
+  .spirit-name {
+    font-size: 16px;
+    font-weight: 300;
+    font-style: italic;
+  }
+
+  .spirit-ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+  }
+
+  /* Insights */
+  .insight-cards {
+    display: grid;
+    gap: 10px;
+  }
+
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .insight-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .insight-text {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  .insight-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  /* Reflection */
+  .reflection-box {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.6;
+    resize: none;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .reflection-box:focus { border-color: var(--accent); }
+  .reflection-box::placeholder { color: var(--muted); font-style: italic; }
+
+  .prompt-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .prompt-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 5px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .prompt-chip:active, .prompt-chip.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0d0d0d;
+  }
+
+  /* Intention today */
+  .intention-block {
+    background: linear-gradient(135deg, #161410 0%, #141414 100%);
+    border: 1px solid #2a2418;
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .intention-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .intention-text {
+    font-size: 22px;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  /* Bottom padding */
+  .bottom-pad { height: 48px; }
+
+  /* Progress bar */
+  .progress-strip {
+    display: flex;
+    gap: 4px;
+    margin-top: 20px;
+    align-items: center;
+  }
+
+  .progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-right: 4px;
+    text-transform: uppercase;
+  }
+
+  .progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .progress-dot.filled { background: var(--accent3); }
+
+  .reset-btn {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .reset-btn:active { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="date-label" id="dateLabel"></div>
+  <div class="title">Daily <em>Operating</em> System</div>
+  <div class="identity-bar">Cloud + AI Platform Strategist</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('routine', this)">Routine</div>
+  <div class="tab" onclick="showTab('growth', this)">Growth</div>
+  <div class="tab" onclick="showTab('identity', this)">Identity</div>
+  <div class="tab" onclick="showTab('reflect', this)">Reflect</div>
+</div>
+
+<!-- ROUTINE TAB -->
+<div class="panel active" id="routine">
+  <div class="section-heading">Morning</div>
+  <div class="routine-grid">
+    <div class="routine-item" onclick="toggle(this)" data-key="wakeup">
+      <div class="color-stripe" style="background:#c9a96e"></div>
+      <div class="routine-time">6–7am</div>
+      <div class="routine-label">Wake up</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="run">
+      <div class="color-stripe" style="background:#c9a96e"></div>
+      <div class="routine-time">7am</div>
+      <div class="routine-label">Morning Run</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="bible">
+      <div class="color-stripe" style="background:#3366aa"></div>
+      <div class="routine-time">7–8am</div>
+      <div class="routine-label">Bible time with God</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="prep">
+      <div class="color-stripe" style="background:#c9a96e"></div>
+      <div class="routine-time">8am</div>
+      <div class="routine-label">Morning prep — coffee + news</div>
+      <div class="routine-dot"></div>
+    </div>
+  </div>
+
+  <div class="section-heading">Work</div>
+  <div class="routine-grid">
+    <div class="routine-item" onclick="toggle(this)" data-key="work">
+      <div class="color-stripe" style="background:#7eb8c9"></div>
+      <div class="routine-time">8am–6pm</div>
+      <div class="routine-label">Start work</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="learning">
+      <div class="color-stripe" style="background:#7eb8c9"></div>
+      <div class="routine-time">Midday</div>
+      <div class="routine-label">30 min learning session</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="article">
+      <div class="color-stripe" style="background:#7eb8c9"></div>
+      <div class="routine-time">Midday</div>
+      <div class="routine-label">Read at least 1 article</div>
+      <div class="routine-dot"></div>
+    </div>
+  </div>
+
+  <div class="section-heading">Evening</div>
+  <div class="routine-grid">
+    <div class="routine-item" onclick="toggle(this)" data-key="family">
+      <div class="color-stripe" style="background:#c97eb8"></div>
+      <div class="routine-time">6–9pm</div>
+      <div class="routine-label">Dinner & family time</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="hobby">
+      <div class="color-stripe" style="background:#9ec97e"></div>
+      <div class="routine-time">9–10pm</div>
+      <div class="routine-label">Free hobby time</div>
+      <div class="routine-dot"></div>
+    </div>
+    <div class="routine-item" onclick="toggle(this)" data-key="bed">
+      <div class="color-stripe" style="background:#c97eb8"></div>
+      <div class="routine-time">10pm</div>
+      <div class="routine-label">Prepare for bed — Read</div>
+      <div class="routine-dot"></div>
+    </div>
+  </div>
+
+  <div class="progress-strip">
+    <div class="progress-label">Done</div>
+    <div class="progress-dot" id="pd0"></div>
+    <div class="progress-dot" id="pd1"></div>
+    <div class="progress-dot" id="pd2"></div>
+    <div class="progress-dot" id="pd3"></div>
+    <div class="progress-dot" id="pd4"></div>
+    <div class="progress-dot" id="pd5"></div>
+    <div class="progress-dot" id="pd6"></div>
+    <div class="progress-dot" id="pd7"></div>
+    <div class="progress-dot" id="pd8"></div>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ Reset for new day</button>
+</div>
+
+<!-- GROWTH TAB -->
+<div class="panel" id="growth">
+  <div class="intention-block">
+    <div class="intention-label">My Role</div>
+    <div class="intention-text">Cloud + AI Platform Strategist</div>
+  </div>
+
+  <div class="section-heading">Growth Pillars</div>
+  <div class="pillars">
+    <div class="pillar cloud">
+      <div class="pillar-name">☁ Cloud & AI</div>
+      <ul class="pillar-items">
+        <li>Solutions Architecture</li>
+        <li>AI Implementation / Deployment</li>
+        <li>Outcome Ownership</li>
+        <li>Customer Discovery</li>
+      </ul>
+    </div>
+    <div class="pillar strategy">
+      <div class="pillar-name">◈ Business Strategy</div>
+      <ul class="pillar-items">
+        <li>Operations & Strategy</li>
+        <li>Customer — Problem Solving</li>
+        <li>Question Reframing</li>
+      </ul>
+    </div>
+    <div class="pillar leadership">
+      <div class="pillar-name">◉ Leadership</div>
+      <ul class="pillar-items">
+        <li>Management — Change Mgmt</li>
+        <li>Communications → Outcome-driven</li>
+        <li>Culture</li>
+        <li>Mentorship</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-heading">Frameworks to Build</div>
+  <div class="pillars">
+    <div class="pillar cloud">
+      <div class="pillar-name">Cloud & AI Playbook → 0</div>
+      <ul class="pillar-items">
+        <li>Implementation</li>
+        <li>Architecture</li>
+        <li>Business Opportunity</li>
+      </ul>
+    </div>
+    <div class="pillar strategy">
+      <div class="pillar-name">Business Strategy</div>
+      <ul class="pillar-items">
+        <li>Problem Solving</li>
+        <li>Customer frameworks</li>
+      </ul>
+    </div>
+    <div class="pillar leadership">
+      <div class="pillar-name">Leadership</div>
+      <ul class="pillar-items">
+        <li>Management playbook</li>
+        <li>Mentorship structure</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-heading">Daily Insights Sources</div>
+  <div class="insight-cards">
+    <div class="insight-card">
+      <div class="insight-icon">📰</div>
+      <div>
+        <div class="insight-tag">Read Today</div>
+        <div class="insight-text">The Information</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">📈</div>
+      <div>
+        <div class="insight-tag">Read Today</div>
+        <div class="insight-text">Financial Times — Economist</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🔬</div>
+      <div>
+        <div class="insight-tag">Review</div>
+        <div class="insight-text">MIT Sloan Review</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IDENTITY TAB -->
+<div class="panel" id="identity">
+  <div class="intention-block">
+    <div class="intention-label">Who to Become</div>
+    <div class="intention-text">"Walk worthy of the calling."</div>
+  </div>
+
+  <div class="section-heading">Galatians 5 — Relationship with...</div>
+  <div class="fruits-grid">
+    <div class="fruit-card">
+      <div class="fruit-category">God</div>
+      <ul class="fruit-list">
+        <li>Love</li>
+        <li>Joy</li>
+        <li>Peace</li>
+      </ul>
+    </div>
+    <div class="fruit-card">
+      <div class="fruit-category">Others</div>
+      <ul class="fruit-list">
+        <li>Forbearance</li>
+        <li>Kindness</li>
+        <li>Goodness</li>
+      </ul>
+    </div>
+    <div class="fruit-card" style="grid-column: 1 / -1;">
+      <div class="fruit-category">Myself</div>
+      <ul class="fruit-list" style="flex-direction: row; gap: 16px; flex-wrap: wrap;">
+        <li>Faithfulness</li>
+        <li>Gentleness</li>
+        <li>Self-control</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-heading">Spirit of — Isaiah 11</div>
+  <div class="spirit-block">
+    <div class="spirit-row">
+      <div class="spirit-name">Wisdom & Understanding</div>
+      <div class="spirit-ref">Is 11:2a / 33:6</div>
+    </div>
+    <div class="spirit-row">
+      <div class="spirit-name">Counsel & Might</div>
+      <div class="spirit-ref">Is 11:2b / 28:6</div>
+    </div>
+    <div class="spirit-row">
+      <div class="spirit-name">Knowledge & Fear of God</div>
+      <div class="spirit-ref">Is 11:3 / 76:11</div>
+    </div>
+  </div>
+
+  <div class="section-heading">Ask Yourself</div>
+  <div class="scripture-block">
+    <div class="scripture-ref">Today's Character Check</div>
+    <div style="font-size:16px; font-weight:300; font-style:italic; line-height:1.7; color:var(--text);">
+      Was I <em>loving</em> with God today?<br>
+      Was I <em>kind</em> and <em>good</em> to others?<br>
+      Did I exercise <em>self-control</em>?<br>
+      Did I act with <em>wisdom</em> and <em>counsel</em>?
+    </div>
+  </div>
+</div>
+
+<!-- REFLECT TAB -->
+<div class="panel" id="reflect">
+  <div class="section-heading">Evening Reflection</div>
+
+  <div class="prompt-row">
+    <div class="prompt-chip" onclick="setPrompt(this, 'What went well today?')">Wins</div>
+    <div class="prompt-chip" onclick="setPrompt(this, 'What challenged me today?')">Challenges</div>
+    <div class="prompt-chip" onclick="setPrompt(this, 'How did I grow today?')">Growth</div>
+    <div class="prompt-chip" onclick="setPrompt(this, 'One thing I am grateful for...')">Gratitude</div>
+  </div>
+
+  <textarea class="reflection-box" id="reflectionBox" placeholder="Tap a prompt or write freely..."></textarea>
+
+  <div class="section-heading" style="margin-top:24px;">Tomorrow's Intention</div>
+  <textarea class="reflection-box" id="intentionBox" placeholder="The one thing I will focus on tomorrow..."></textarea>
+
+  <div class="section-heading" style="margin-top:24px;">Weekly Anchors — Sun Sat</div>
+  <div class="scripture-block">
+    <div style="font-size:15px; font-weight:300; line-height:1.8; color:var(--text-dim);">
+      <em style="color:var(--text);">Auto Cred / Leadership Tue</em> noted on calendar<br>
+      Review frameworks progress weekly<br>
+      Check Playbook → 0 progress<br>
+      Read at least 1 article per work day
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="saveReflection()" style="border-color:var(--accent); color:var(--accent);">Save Reflection</button>
+  <div id="saveMsg" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent3); margin-top:10px; min-height:16px;"></div>
+</div>
+
+<div class="bottom-pad"></div>
+
+<script>
+  // Date
+  const now = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  document.getElementById('dateLabel').textContent = now.toLocaleDateString('en-US', opts);
+
+  // Tab switching
+  function showTab(id, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  // Routine toggle with persistence
+  const todayKey = 'dos_' + now.toDateString();
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(todayKey) || '{}'); } catch(e) { return {}; }
+  }
+
+  function saveState(state) {
+    try { localStorage.setItem(todayKey, JSON.stringify(state)); } catch(e) {}
+  }
+
+  function toggle(el) {
+    el.classList.toggle('done');
+    const state = loadState();
+    state[el.dataset.key] = el.classList.contains('done');
+    saveState(state);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const items = document.querySelectorAll('.routine-item');
+    const done = document.querySelectorAll('.routine-item.done').length;
+    items.forEach((item, i) => {
+      const dot = document.getElementById('pd' + i);
+      if (dot) dot.className = 'progress-dot' + (item.classList.contains('done') ? ' filled' : '');
+    });
+  }
+
+  function resetAll() {
+    if (!confirm('Reset all checkboxes for today?')) return;
+    document.querySelectorAll('.routine-item').forEach(i => i.classList.remove('done'));
+    saveState({});
+    updateProgress();
+  }
+
+  // Restore state on load
+  (function() {
+    const state = loadState();
+    document.querySelectorAll('.routine-item').forEach(el => {
+      if (state[el.dataset.key]) el.classList.add('done');
+    });
+    updateProgress();
+  })();
+
+  // Reflection prompts
+  function setPrompt(chip, text) {
+    document.querySelectorAll('.prompt-chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    const box = document.getElementById('reflectionBox');
+    box.placeholder = text;
+    box.focus();
+  }
+
+  // Save reflection to localStorage
+  const reflKey = 'dos_reflect_' + now.toDateString();
+  const intentKey = 'dos_intent_' + now.toDateString();
+
+  try {
+    const saved = localStorage.getItem(reflKey);
+    if (saved) document.getElementById('reflectionBox').value = saved;
+    const intent = localStorage.getItem(intentKey);
+    if (intent) document.getElementById('intentionBox').value = intent;
+  } catch(e) {}
+
+  document.getElementById('reflectionBox').addEventListener('input', function() {
+    try { localStorage.setItem(reflKey, this.value); } catch(e) {}
+  });
+  document.getElementById('intentionBox').addEventListener('input', function() {
+    try { localStorage.setItem(intentKey, this.value); } catch(e) {}
+  });
+
+  function saveReflection() {
+    const msg = document.getElementById('saveMsg');
+    msg.textContent = '✓ Saved';
+    setTimeout(() => msg.textContent = '', 2000);
+  }
+</script>
+</body>
+</html>
