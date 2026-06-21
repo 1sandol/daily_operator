@@ -21,7 +21,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ui);-webkit-font-smoothing:antialiased}
-  body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+  body{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
 
   /* Header */
   header{
@@ -279,8 +279,7 @@
   const work = {t:'9:00–18:00', label:'Work — Program Management', tag:'neutral', tname:'Work'};
   const lunch = {t:'Lunch', label:'15-min walk or leadership read', tag:'neutral', tname:'Bonus'};
   const wake = {t:'7:30', label:'Wake & get ready', tag:'neutral', tname:'Start'};
-  const quiet = {t:'Morning', label:'Quiet time with God', tag:'faith', tname:'Quiet'};
-  const worship = {t:'Morning', label:'Worship at church', tag:'faith', tname:'Worship'};
+  const quiet = {t:'Morning', label:'Time with God', tag:'faith', tname:'Faith'};
   const family = {t:'18:30', label:'Dinner & family', tag:'neutral', tname:'Family'};
   const readEve = {t:'21:30', label:'Reading — wind-down', tag:'read', tname:'Read'};
 
@@ -298,10 +297,9 @@
       {t:'Night',label:'Reading',tag:'read',tname:'Read'}],
     0:[ // Sunday
       quiet,
-      worship,
       {t:'Afternoon',label:'Family time',tag:'neutral',tname:'Family'},
-      {t:'Afternoon',label:'Self-development deep block (60–90m)',tag:'selfdev',tname:'Self-Dev'},
-      {t:'Evening',label:'Reading + weekly review',tag:'read',tname:'Read'}],
+      {t:'Evening',label:'Weekly review',tag:'read',tname:'Read'},
+      {t:'Night',label:'Reading',tag:'read',tname:'Read'}],
   };
 
   // ---------- Header ----------
@@ -350,12 +348,11 @@
 
   // ---------- Week ----------
   const HABITS = [
-    {k:'quiet',  name:'Quiet Time',target:7, color:'var(--faith)', planned:[0,1,2,3,4,5,6], group:'Faith'},
-    {k:'worship',name:'Worship',   target:1, color:'var(--faith)', planned:[0],             group:'Faith'},
-    {k:'gym',  name:'Gym',     target:3, color:'var(--gold)',  planned:[1,3,6], group:'Habits'},
-    {k:'self', name:'Self-Dev',target:2, color:'var(--violet)',planned:[2,0],   group:'Habits'},
-    {k:'games',name:'Games',   target:3, color:'var(--blue)',  planned:[4,5,6], group:'Habits'},
-    {k:'read', name:'Reading', target:7, color:'var(--sage)',  planned:[0,1,2,3,4,5,6], group:'Habits'},
+    {k:'quiet',  name:'Time with God',target:7, color:'var(--faith)', planned:[0,1,2,3,4,5,6], group:'Faith'},
+    {k:'gym',  name:'Exercise',     target:3, color:'var(--gold)',  planned:[1,3,6], group:'Habits'},
+    {k:'self', name:'Read Signals',target:2, color:'var(--violet)',planned:[2,0],   group:'Habits'},
+    {k:'games',name:'Games',   target:3, color:'var(--blue)',  planned:[4,5,6], group:'Hobby'},
+    {k:'read', name:'Reading', target:7, color:'var(--sage)',  planned:[0,1,2,3,4,5,6], group:'Hobby'},
   ];
   const COLS = [1,2,3,4,5,6,0]; // Mon..Sun
   const COL_LBL = ['M','T','W','T','F','S','S'];
