@@ -20,11 +20,12 @@
     --ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-  html,body{background:var(--bg);color:var(--text);font-family:var(--ui);-webkit-font-smoothing:antialiased}
-  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ui);-webkit-font-smoothing:antialiased}
+  body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
 
   /* Header */
   header{
+    flex:none;
     padding:calc(env(safe-area-inset-top) + 22px) 22px 18px;
     background:linear-gradient(170deg,#1A2230 0%,var(--bg) 100%);
     border-bottom:1px solid var(--line);
@@ -33,7 +34,7 @@
   .greeting{font-family:var(--serif);font-size:27px;line-height:1.15;margin-top:7px;font-weight:600}
   .datestamp{color:var(--muted);font-size:13px;margin-top:6px;letter-spacing:.02em}
 
-  main{padding:18px 18px 8px}
+  main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding:18px 18px 16px}
   section[hidden]{display:none}
 
   /* Cards */
@@ -116,7 +117,7 @@
   .saved{font-size:11px;color:var(--sage);height:14px;margin-top:8px}
 
   /* Tab bar */
-  nav{position:fixed;bottom:0;left:0;right:0;background:rgba(16,20,28,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+  nav{flex:none;background:rgba(16,20,28,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
   .tab{flex:1;background:none;border:none;color:var(--muted);padding:11px 0 9px;font-family:var(--ui);font-size:10px;letter-spacing:.03em;display:flex;flex-direction:column;align-items:center;gap:4px}
   .tab svg{width:21px;height:21px}
   .tab.active{color:var(--gold)}
@@ -439,7 +440,7 @@
     document.querySelectorAll('main section').forEach(s=>s.hidden=(s.id!==id));
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     btn.classList.add('active');
-    window.scrollTo(0,0);
+    document.querySelector('main').scrollTop = 0;
   }
 
   // init
